@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>German A2 Prep</title>
+  <style>
+    :root{
+      --brand:#0d6efd; --bg:#f6f7fb; --card:#ffffff; --text:#222; --muted:#666; --ok:#2e7d32; --bad:#c62828;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:var(--brand);color:#fff;padding:14px 20px;text-align:center}
+    main{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:16px;margin:16px 0}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    button{appearance:none;border:0;border-radius:10px;padding:12px 16px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600}
+    button.ghost{background:#e9efff;color:#123}
+    button.option{width:100%;text-align:left;background:#f3f6ff;color:#123;border:2px solid transparent}
+    button.option:hover{border-color:#cad6ff}
+    button.option.correct{border-color:var(--ok)}
+    button.option.incorrect{border-color:var(--bad)}
+    .title{font-size:22px;margin:0 0 6px}
+    .muted{color:var(--muted);font-size:14px}
+    .progress{height:10px;background:#e9ecf7;border-radius:999px;overflow:hidden;margin:8px 0 6px}
+    .bar{height:100%;background:var(--brand);width:0%}
+    .feedback{padding:10px 12px;border-left:4px solid #ddd;background:#f9fafc;border-radius:8px;margin-top:10px}
+    .good{border-color:var(--ok)}
+    .bad{border-color:var(--bad)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef5ff;color:#223;font-size:12px;margin-left:8px}
+    .scorebox{display:flex;align-items:center;gap:12px}
+    @media (min-width:640px){button.option{width:calc(50% - 6px)}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>German A2 Exam Prep</h1>
+  </header>
+  <main>
+    <!-- Entry Screen: Mode Picker -->
+    <section id="screen-home" class="card">
+      <h2 class="title">Choose a mode</h2>
+      <p class="muted">Pick a practice style. Each mode has 15 questions. You'll see the question & answer translations after each question, plus a summary at the end.</p>
+      <div class="row">
+        <button id="btn-flash" class="ghost">1) Flash Cards</button>
+        <button id="btn-convo" class="ghost">2) Conversation Q&A</button>
+      </div>
+    </section>
+
+    <!-- Quiz Screen -->
+    <section id="screen-quiz" class="card" style="display:none">
+      <div class="scorebox">
+        <h2 id="mode-title" class="title" style="margin:0"></h2>
+        <span id="counter" class="pill">1 / 15</span>
+      </div>
+      <div class="progress" aria-label="progress"><div id="bar" class="bar"></div></div>
+      <p id="question" style="font-size:18px;margin:14px 0 8px"></p>
+      <div id="options" class="row"></div>
+      <div id="feedback" class="feedback" style="display:none"></div>
+      <div class="row">
+        <button id="btn-next" style="display:none">Next</button>
+        <button id="btn-quit" class="ghost">Exit</button>
+      </div>
+    </section>
+
+    <!-- Summary Screen -->
+    <section id="screen-summary" class="card" style="display:none">
+      <h2 class="title">Summary</h2>
+      <p class="muted" id="final-score"></p>
+      <div style="overflow:auto;max-height:55vh">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Question (DE/EN)</th>
+              <th>Correct Answer (DE/EN)</th>
+              <th>Your Answer (DE/EN)</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="summary-body"></tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="btn-retry">Try Again</button>
+        <button id="btn-home" class="ghost">Home</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ====== DATA (15 Qs each) ======
+    // Each item: { q, qEn, options[], optionsEn[], answer, answerEn }
+    const FLASH_CARDS = [
+      { q:"Woher kommst du?", qEn:"Where are you from?",
+        options:["Ich komme aus Berlin.","Ich bin vierzehn Jahre alt.","Ich gehe zur Schule."],
+        optionsEn:["I come from Berlin.","I am fourteen years old.","I go to school."],
+        answer:"Ich komme aus Berlin.", answerEn:"I come from Berlin." },
+      { q:"Wie alt bist du?", qEn:"How old are you?",
+        options:["Ich bin vierzehn Jahre alt.","Ich komme mit dem Bus.","Ich habe Hunger."],
+        optionsEn:["I am fourteen years old.","I come by bus.","I am hungry."],
+        answer:"Ich bin vierzehn Jahre alt.", answerEn:"I am fourteen years old." },
+      { q:"Was machst du gern?", qEn:"What do you like to do?",
+        options:["Ich spiele gern Fußball.","Ich komme aus München.","Ich heiße Paul."],
+        optionsEn:["I like playing football/soccer.","I come from Munich.","My name is Paul."],
+        answer:"Ich spiele gern Fußball.", answerEn:"I like playing football/soccer." },
+      { q:"Was ist dein Lieblingsfach?", qEn:"What is your favorite subject?",
+        options:["Mein Lieblingsfach ist Mathe.","Ich esse Frühstück.","Ich fahre Fahrrad."],
+        optionsEn:["My favorite subject is math.","I eat breakfast.","I ride a bicycle."],
+        answer:"Mein Lieblingsfach ist Mathe.", answerEn:"My favorite subject is math." },
+      { q:"Wann frühstückst du?", qEn:"When do you have breakfast?",
+        options:["Ich frühstücke um 7 Uhr.","Ich wohne in Köln.","Ich spiele Klavier."],
+        optionsEn:["I have breakfast at 7 o'clock.","I live in Cologne.","I play the piano."],
+        answer:"Ich frühstücke um 7 Uhr.", answerEn:"I have breakfast at 7 o'clock." },
+      { q:"Wie kommst du zur Schule?", qEn:"How do you get to school?",
+        options:["Ich fahre mit dem Bus.","Ich habe zwei Katzen.","Ich bin müde."],
+        optionsEn:["I go by bus.","I have two cats.","I am tired."],
+        answer:"Ich fahre mit dem Bus.", answerEn:"I go by bus." },
+      { q:"Was möchtest du trinken?", qEn:"What would you like to drink?",
+        options:["Ich möchte Wasser, bitte.","Ich wohne in Hamburg.","Ich lerne Englisch."],
+        optionsEn:["I'd like water, please.","I live in Hamburg.","I am learning English."],
+        answer:"Ich möchte Wasser, bitte.", answerEn:"I'd like water, please." },
+      { q:"Wie ist das Wetter heute?", qEn:"What's the weather like today?",
+        options:["Es ist sonnig.","Ich spiele Tennis.","Ich gehe ins Kino."],
+        optionsEn:["It is sunny.","I play tennis.","I am going to the cinema."],
+        answer:"Es ist sonnig.", answerEn:"It is sunny." },
+      { q:"Was kostet das?", qEn:"How much does that cost?",
+        options:["Es kostet zehn Euro.","Ich komme morgen.","Ich habe Durst."],
+        optionsEn:["It costs ten euros.","I am coming tomorrow.","I am thirsty."],
+        answer:"Es kostet zehn Euro.", answerEn:"It costs ten euros." },
+      { q:"Wo ist die Toilette?", qEn:"Where is the restroom?",
+        options:["Die Toilette ist dort drüben.","Ich nehme den Zug.","Ich esse Suppe."],
+        optionsEn:["The restroom is over there.","I take the train.","I eat soup."],
+        answer:"Die Toilette ist dort drüben.", answerEn:"The restroom is over there." },
+      { q:"Hast du Geschwister?", qEn:"Do you have siblings?",
+        options:["Ja, ich habe eine Schwester.","Ich wohne allein.","Ich trinke Kaffee."],
+        optionsEn:["Yes, I have a sister.","I live alone.","I drink coffee."],
+        answer:"Ja, ich habe eine Schwester.", answerEn:"Yes, I have a sister." },
+      { q:"Was machst du am Wochenende?", qEn:"What do you do on the weekend?",
+        options:["Ich treffe Freunde.","Ich nehme die U-Bahn.","Ich esse zu Mittag."],
+        optionsEn:["I meet friends.","I take the subway.","I eat lunch."],
+        answer:"Ich treffe Freunde.", answerEn:"I meet friends." },
+      { q:"Wann hast du Deutsch?", qEn:"When do you have German class?",
+        options:["Ich habe Deutsch am Montag.","Ich lerne in der Bibliothek.","Ich lese ein Buch."],
+        optionsEn:["I have German on Monday.","I study in the library.","I am reading a book."],
+        answer:"Ich habe Deutsch am Montag.", answerEn:"I have German on Monday." },
+      { q:"Wie spät ist es?", qEn:"What time is it?",
+        options:["Es ist halb neun.","Ich spiele nach der Schule.","Ich gehe schwimmen."],
+        optionsEn:["It is half past eight.","I play after school.","I go swimming."],
+        answer:"Es ist halb neun.", answerEn:"It is half past eight." },
+      { q:"Wo wohnst du?", qEn:"Where do you live?",
+        options:["Ich wohne in München.","Ich mache Hausaufgaben.","Ich fahre nach Hause."],
+        optionsEn:["I live in Munich.","I do homework.","I drive/go home."],
+        answer:"Ich wohne in München.", answerEn:"I live in Munich." },
+    ];
+
+    const CONVO_QNA = [
+      { q:"Im Café: Was bestellst du?", qEn:"At the café: What do you order?",
+        options:["Ich nehme einen Apfel.","Ich nehme einen Kaffee, bitte.","Ich gehe zur Schule."],
+        optionsEn:["I'll take an apple.","I'll have a coffee, please.","I go to school."],
+        answer:"Ich nehme einen Kaffee, bitte.", answerEn:"I'll have a coffee, please." },
+      { q:"Beim Bäcker: Was sagst du?", qEn:"At the bakery: What do you say?",
+        options:["Zwei Brötchen, bitte.","Ich bin zwölf Jahre alt.","Wo wohnst du?"],
+        optionsEn:["Two bread rolls, please.","I am twelve years old.","Where do you live?"],
+        answer:"Zwei Brötchen, bitte.", answerEn:"Two bread rolls, please." },
+      { q:"Nach dem Weg fragen:", qEn:"Asking for directions:",
+        options:["Geradeaus und dann links.","Ich mag Musik.","Ich bin müde."],
+        optionsEn:["Straight ahead and then left.","I like music.","I am tired."],
+        answer:"Geradeaus und dann links.", answerEn:"Straight ahead and then left." },
+      { q:"Am Bahnhof: Wann fährt der Zug?", qEn:"At the station: When does the train leave?",
+        options:["Um neun Uhr.","Ich spiele Fußball.","Ich wohne in Bonn."],
+        optionsEn:["At nine o'clock.","I play football/soccer.","I live in Bonn."],
+        answer:"Um neun Uhr.", answerEn:"At nine o'clock." },
+      { q:"Im Supermarkt an der Kasse:", qEn:"At the supermarket checkout:",
+        options:["Ich möchte mit Karte bezahlen.","Ich gehe tanzen.","Ich bin groß."],
+        optionsEn:["I'd like to pay by card.","I am going dancing.","I am tall."],
+        answer:"Ich möchte mit Karte bezahlen.", answerEn:"I'd like to pay by card." },
+      { q:"Beim Arzt: Was sagst du?", qEn:"At the doctor's: What do you say?",
+        options:["Ich habe Bauchschmerzen.","Ich bin im Park.","Ich mag Mathe."],
+        optionsEn:["I have stomachache.","I am in the park.","I like math."],
+        answer:"Ich habe Bauchschmerzen.", answerEn:"I have stomachache." },
+      { q:"Termin machen:", qEn:"Making an appointment:",
+        options:["Ich möchte einen Termin am Dienstag.","Ich schwimme gern.","Ich esse Pizza."],
+        optionsEn:["I'd like an appointment on Tuesday.","I like swimming.","I eat pizza."],
+        answer:"Ich möchte einen Termin am Dienstag.", answerEn:"I'd like an appointment on Tuesday." },
+      { q:"Einladung ablehnen:", qEn:"Declining an invitation:",
+        options:["Tut mir leid, ich kann nicht.","Ich bin fünfzehn.","Ich lerne Deutsch."],
+        optionsEn:["Sorry, I can't.","I am fifteen.","I am learning German."],
+        answer:"Tut mir leid, ich kann nicht.", answerEn:"Sorry, I can't." },
+      { q:"Im Hotel: Zimmerwunsch", qEn:"At the hotel: Room preference",
+        options:["Ich möchte ein Einzelzimmer.","Ich mag Katzen.","Ich gehe zu Fuß."],
+        optionsEn:["I'd like a single room.","I like cats.","I go on foot."],
+        answer:"Ich möchte ein Einzelzimmer.", answerEn:"I'd like a single room." },
+      { q:"Im Restaurant: Nach der Rechnung fragen", qEn:"In the restaurant: Asking for the bill",
+        options:["Zahlen, bitte.","Ich bin satt.","Ich komme morgen."],
+        optionsEn:["The bill, please.","I am full.","I am coming tomorrow."],
+        answer:"Zahlen, bitte.", answerEn:"The bill, please." },
+      { q:"In der Schule: Entschuldigen", qEn:"At school: Apologizing",
+        options:["Entschuldigung, ich bin zu spät.","Guten Morgen, Papa.","Ich habe Hunger."],
+        optionsEn:["Sorry, I'm late.","Good morning, Dad.","I am hungry."],
+        answer:"Entschuldigung, ich bin zu spät.", answerEn:"Sorry, I'm late." },
+      { q:"Beim Telefonieren:", qEn:"On the phone:",
+        options:["Können Sie das bitte wiederholen?", "Ich spiele am Samstag.", "Ich esse jetzt."],
+        optionsEn:["Could you repeat that, please?","I play on Saturday.","I am eating now."],
+        answer:"Können Sie das bitte wiederholen?", answerEn:"Could you repeat that, please?" },
+      { q:"Einen Vorschlag machen:", qEn:"Making a suggestion:",
+        options:["Wollen wir ins Kino gehen?","Ich wohne in Berlin.","Ich trinke Tee."],
+        optionsEn:["Shall we go to the cinema?","I live in Berlin.","I drink tea."],
+        answer:"Wollen wir ins Kino gehen?", answerEn:"Shall we go to the cinema?" },
+      { q:"Hilfe anbieten:", qEn:"Offering help:",
+        options:["Kann ich dir helfen?","Ich heiße Anna.","Ich gehe nach Hause."],
+        optionsEn:["Can I help you?","My name is Anna.","I'm going home."],
+        answer:"Kann ich dir helfen?", answerEn:"Can I help you?" },
+      { q:"Bei der Post:", qEn:"At the post office:",
+        options:["Ich möchte ein Paket schicken.","Ich habe Mathe.","Ich bin sehr müde."],
+        optionsEn:["I'd like to send a package.","I have math.","I am very tired."],
+        answer:"Ich möchte ein Paket schicken.", answerEn:"I'd like to send a package." },
+    ];
+
+    // ====== App State ======
+    const state = {
+      mode: null,                 // 'flash' | 'convo'
+      deck: [],                   // active list of 15 q's
+      index: 0,
+      score: 0,
+      answers: []                 // [{q, qEn, correct, answerEn, chosen, chosenEn, isCorrect}]
+    };
+
+    // ====== Elements ======
+    const el = (id)=>document.getElementById(id);
+    const screenHome = el('screen-home');
+    const screenQuiz = el('screen-quiz');
+    const screenSummary = el('screen-summary');
+    const modeTitle = el('mode-title');
+    const question = el('question');
+    const options = el('options');
+    const feedback = el('feedback');
+    const btnNext = el('btn-next');
+    const btnQuit = el('btn-quit');
+    const counter = el('counter');
+    const bar = el('bar');
+    const finalScore = el('final-score');
+    const summaryBody = el('summary-body');
+
+    // ====== Helpers ======
+    function shuffle(a){
+      for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;
+    }
+
+    function start(mode){
+      state.mode = mode;
+      state.deck = shuffle([...(mode==='flash'?FLASH_CARDS:CONVO_QNA)]).slice(0,15);
+      state.index = 0; state.score = 0; state.answers = [];
+      modeTitle.textContent = (mode==='flash'? 'Flash Cards':'Conversation Q&A');
+      screenHome.style.display='none';
+      screenSummary.style.display='none';
+      screenQuiz.style.display='block';
+      btnNext.style.display='none';
+      renderQuestion();
+    }
+
+    function renderQuestion(){
+      const i = state.index; const total = state.deck.length; const item = state.deck[i];
+      counter.textContent = `${i+1} / ${total}`;
+      bar.style.width = `${((i)/total)*100}%`;
+      question.textContent = item.q;
+      options.innerHTML = '';
+      feedback.style.display='none';
+      btnNext.style.display='none';
+
+      shuffle([...item.options]).forEach(opt=>{
+        const b = document.createElement('button');
+        b.className='option';
+        b.textContent = opt;
+        b.onclick = ()=>selectAnswer(opt, item, b);
+        options.appendChild(b);
+      });
+    }
+
+    function selectAnswer(chosen, item){
+      // lock options
+      [...options.children].forEach(c=>c.disabled=true);
+      const isCorrect = chosen === item.answer;
+      if(isCorrect){ state.score++; }
+
+      // highlight selected + correct
+      [...options.children].forEach(c=>{
+        if(c.textContent===item.answer) c.classList.add('correct');
+        if(c.textContent===chosen && !isCorrect) c.classList.add('incorrect');
+      });
+
+      // Build option translations list (original order)
+      const list = item.options.map((opt,idx)=>{
+        const mark = opt===item.answer ? ' <strong>(correct)</strong>' : '';
+        return `<li>${opt} — <em>${item.optionsEn[idx]}</em>${mark}</li>`;
+      }).join('');
+
+      const chosenIdx = item.options.indexOf(chosen);
+      const chosenEn = chosenIdx >= 0 ? item.optionsEn[chosenIdx] : '';
+
+      // Feedback with Q (DE/EN) + Correct (DE/EN) + all option translations
+      feedback.className = 'feedback ' + (isCorrect? 'good':'bad');
+      feedback.style.display='block';
+      feedback.innerHTML = `
+        ${isCorrect? '✅ Correct!':'❌ Not quite.'}
+        <div style="margin-top:6px"><strong>Question:</strong> ${item.q} <br><em>${item.qEn}</em></div>
+        <div style="margin-top:6px"><strong>Correct answer:</strong> ${item.answer} <br><em>${item.answerEn}</em></div>
+        <div style="margin-top:6px"><strong>Options (with EN):</strong>
+          <ul style="margin:6px 0 0 18px">${list}</ul>
+        </div>
+      `;
+
+      // store result
+      state.answers.push({ q:item.q, qEn:item.qEn, correct:item.answer, answerEn:item.answerEn, chosen, chosenEn, isCorrect });
+
+      // Next/Finish
+      btnNext.textContent = (state.index===state.deck.length-1)? 'Finish' : 'Next';
+      btnNext.style.display='inline-block';
+      btnNext.onclick = next;
+    }
+
+    function next(){
+      if(state.index < state.deck.length-1){
+        state.index++;
+        renderQuestion();
+      } else {
+        finish();
+      }
+    }
+
+    function finish(){
+      bar.style.width = '100%';
+      screenQuiz.style.display='none';
+      screenSummary.style.display='block';
+      finalScore.textContent = `You scored ${state.score} / ${state.deck.length}`;
+      summaryBody.innerHTML = '';
+      state.answers.forEach((a,idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx+1}</td>
+          <td>${a.q}<br><em>${a.qEn}</em></td>
+          <td>${a.correct}<br><em>${a.answerEn}</em></td>
+          <td>${a.chosen ? a.chosen + '<br><em>' + (a.chosenEn||'') + '</em>' : '—'}</td>
+          <td>${a.isCorrect? '✅ Correct':'❌ Wrong'}</td>
+        `;
+        summaryBody.appendChild(tr);
+      });
+    }
+
+    // ====== Navigation ======
+    document.getElementById('btn-flash').onclick = ()=>start('flash');
+    document.getElementById('btn-convo').onclick = ()=>start('convo');
+
+    document.getElementById('btn-retry').onclick = ()=>start(state.mode||'flash');
+    document.getElementById('btn-home').onclick = ()=>{
+      screenSummary.style.display='none';
+      screenQuiz.style.display='none';
+      screenHome.style.display='block';
+    };
+    btnQuit.onclick = ()=>{
+      screenQuiz.style.display='none';
+      screenHome.style.display='block';
+    };
+  </script>
+</body>
+</html>
